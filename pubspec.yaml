@@ -18,7 +18,6 @@ dependencies:
   mobile_scanner: ^3.5.5
   cached_network_image: ^3.3.1
   intl: ^0.18.1
-  connectivity_plus: ^5.0.2
   file_picker: ^6.1.1
   image_picker: ^1.0.5
   cupertino_icons: ^1.0.6
