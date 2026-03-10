@@ -1,24 +1,51 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'app/routes.dart';
-import 'core/storage/local_storage.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await LocalStorage.init();
-  runApp(const ProviderScope(child: MbokaCareApp()));
+void main() {
+  runApp(const MyApp());
 }
 
-class MbokaCareApp extends StatelessWidget {
-  const MbokaCareApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MBOKA-CARE',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: const Color(0xFF2196F3)),
-      initialRoute: AppRoutes.splash,
-      onGenerateRoute: AppRoutes.generateRoute,
+      title: 'Mboka Care',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const HomePage(),
+    );
+  }
+}
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Mboka Care'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Bienvenue sur Mboka Care',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            const Text('Backend: https://mboka-care-api.onrender.com'),
+            const SizedBox(height: 40),
+            ElevatedButton(
+              onPressed: () {},
+              child: const Text('Connexion'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
