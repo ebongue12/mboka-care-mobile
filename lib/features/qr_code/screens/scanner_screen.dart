@@ -81,8 +81,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   Widget _card(String label, String value, Color color) => Container(
     width: double.infinity, margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(color: color.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: color.withValues(alpha: 0.2))),
+    decoration: BoxDecoration(color: color.withOpacity( 0.05), borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: color.withOpacity( 0.2))),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
       const SizedBox(height: 4),

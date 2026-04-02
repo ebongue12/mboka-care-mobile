@@ -8,56 +8,52 @@ class LocalStorage {
   }
 
   // Tokens
-  static Future<void> saveAccessToken(String token) async {
-    await _prefs.setString('access_token', token);
-  }
+  static Future<void> saveAccessToken(String token) async =>
+      _prefs.setString('access_token', token);
+  static String? getAccessToken() => _prefs.getString('access_token');
 
-  static String? getAccessToken() {
-    return _prefs.getString('access_token');
-  }
+  static Future<void> saveRefreshToken(String token) async =>
+      _prefs.setString('refresh_token', token);
+  static String? getRefreshToken() => _prefs.getString('refresh_token');
 
-  static Future<void> saveRefreshToken(String token) async {
-    await _prefs.setString('refresh_token', token);
-  }
-
-  static String? getRefreshToken() {
-    return _prefs.getString('refresh_token');
-  }
-
-  // Nettoyer les tokens (pour logout ou erreur 401)
   static Future<void> clearTokens() async {
     await _prefs.remove('access_token');
     await _prefs.remove('refresh_token');
   }
 
   // User info
-  static Future<void> saveUserId(String id) async {
-    await _prefs.setString('user_id', id);
-  }
+  static Future<void> saveUserId(String id) async =>
+      _prefs.setString('user_id', id);
+  static String? getUserId() => _prefs.getString('user_id');
 
-  static String? getUserId() {
-    return _prefs.getString('user_id');
-  }
-
-  static Future<void> saveUserRole(String role) async {
-    await _prefs.setString('user_role', role);
-  }
-
-  static String? getUserRole() {
-    return _prefs.getString('user_role');
-  }
+  static Future<void> saveUserRole(String role) async =>
+      _prefs.setString('user_role', role);
+  static String? getUserRole() => _prefs.getString('user_role');
 
   // Onboarding
-  static Future<void> setOnboardingComplete() async {
-    await _prefs.setBool('onboarding_complete', true);
+  static Future<void> setOnboardingComplete() async =>
+      _prefs.setBool('onboarding_complete', true);
+  static bool isOnboardingComplete() =>
+      _prefs.getBool('onboarding_complete') ?? false;
+
+  // QR Update tracking (popup tous les 15 jours)
+  static Future<void> saveLastQrUpdateCheck() async =>
+      _prefs.setString('last_qr_check', DateTime.now().toIso8601String());
+
+  static bool shouldShowQrUpdatePrompt() {
+    final last = _prefs.getString('last_qr_check');
+    if (last == null) return true;
+    try {
+      final diff = DateTime.now().difference(DateTime.parse(last));
+      return diff.inDays >= 15;
+    } catch (_) {
+      return true;
+    }
   }
 
-  static bool isOnboardingComplete() {
-    return _prefs.getBool('onboarding_complete') ?? false;
-  }
+  static Future<void> dismissQrUpdatePrompt() async =>
+      saveLastQrUpdateCheck();
 
   // Clear all
-  static Future<void> clearAll() async {
-    await _prefs.clear();
-  }
+  static Future<void> clearAll() async => _prefs.clear();
 }

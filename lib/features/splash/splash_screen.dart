@@ -25,13 +25,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
   void _navigate() {
     if (!mounted) return;
     final token = LocalStorage.getAccessToken();
+    final role = LocalStorage.getUserRole();
     final done = LocalStorage.isOnboardingComplete();
     if (token != null) {
-      Navigator.pushReplacementNamed(context, AppRoutes.patientDashboard);
+      final route = role?.toUpperCase() == 'MEDECIN'
+          ? AppRoutes.medecinDashboard
+          : AppRoutes.patientDashboard;
+      Navigator.pushReplacementNamed(context, route);
     } else if (!done) {
       Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
     } else {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
+      Navigator.pushReplacementNamed(context, AppRoutes.roleSelector);
     }
   }
 

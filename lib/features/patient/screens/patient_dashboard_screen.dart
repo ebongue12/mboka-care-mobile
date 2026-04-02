@@ -3,217 +3,487 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/providers/patient_provider.dart';
 import '../../../data/providers/reminder_provider.dart';
 import '../../../data/providers/notification_provider.dart';
+import '../../../data/providers/document_provider.dart';
+import '../../../data/providers/family_provider.dart';
 import '../../../data/providers/auth_provider.dart';
+import '../../../data/providers/qr_update_provider.dart';
 import '../../../app/routes.dart';
 
 class PatientDashboardScreen extends ConsumerStatefulWidget {
   const PatientDashboardScreen({super.key});
   @override
-  ConsumerState<PatientDashboardScreen> createState() => _PatientDashboardScreenState();
+  ConsumerState<PatientDashboardScreen> createState() =>
+      _PatientDashboardScreenState();
 }
 
-class _PatientDashboardScreenState extends ConsumerState<PatientDashboardScreen> {
-  int _idx = 0;
-
+class _PatientDashboardScreenState
+    extends ConsumerState<PatientDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
+    Future.microtask(() async {
       ref.read(patientProvider.notifier).loadProfile();
       ref.read(reminderProvider.notifier).loadReminders();
       ref.read(notificationProvider.notifier).loadNotifications();
+      ref.read(documentProvider.notifier).loadDocuments();
+      ref.read(familyProvider.notifier).loadMembers();
+      // Popup mise à jour QR tous les 15 jours
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) {
+        final should =
+            await ref.read(qrUpdateProvider.notifier).shouldShowUpdatePrompt();
+        if (should && mounted) {
+          await Navigator.pushNamed(context, AppRoutes.qrUpdatePrompt);
+        }
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final patient = ref.watch(patientProvider).patient;
+    final firstName = patient?.firstName ?? '';
+    final fullName = patient?.fullName ?? 'Mon profil';
+    final phone = patient?.emergencyContactPhone ?? '';
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: IndexedStack(index: _idx, children: const [_HomeTab(), _RemindersTab(), _DocumentsTab(), _ProfileTab()]),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _idx,
-        onDestinationSelected: (i) => setState(() => _idx = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Accueil'),
-          NavigationDestination(icon: Icon(Icons.alarm_outlined), selectedIcon: Icon(Icons.alarm), label: 'Rappels'),
-          NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: 'Documents'),
-          NavigationDestination(icon: Icon(Icons.person_outlined), selectedIcon: Icon(Icons.person), label: 'Profil'),
+      backgroundColor: const Color(0xFFF5F7FA),
+
+      // ─── DRAWER MENU GAUCHE ───────────────────────────────────────────
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            // ── En-tête Drawer ───────────────────────────────────────
+            UserAccountsDrawerHeader(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              currentAccountPicture: CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Icon(Icons.person,
+                    size: 40, color: Colors.blue.shade700),
+              ),
+              accountName: Text(
+                fullName,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 17),
+              ),
+              accountEmail: Text(
+                phone.isNotEmpty ? phone : 'Mboka Care',
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+
+            // ── Items menu ───────────────────────────────────────────
+            _DrawerItem(
+              icon: Icons.home,
+              iconColor: const Color(0xFF3B82F6),
+              label: 'Accueil',
+              onTap: () => Navigator.pop(context),
+            ),
+            _DrawerItem(
+              icon: Icons.people,
+              iconColor: const Color(0xFF3B82F6),
+              label: 'Ma Famille',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.family);
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.alarm,
+              iconColor: const Color(0xFF10B981),
+              label: 'Rappels',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.reminders);
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.medical_services,
+              iconColor: const Color(0xFFEF4444),
+              label: 'Ma Santé - Priorité',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.healthPriority);
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.qr_code_2,
+              iconColor: const Color(0xFF8B5CF6),
+              label: 'Mon QR Code',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.qrCode);
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.credit_card_outlined,
+              iconColor: const Color(0xFF1565C0),
+              label: 'Carte QR Médicale',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.qrCard);
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.description_outlined,
+              iconColor: const Color(0xFFE91E63),
+              label: 'Mes Documents',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.documents);
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.people_outline,
+              iconColor: const Color(0xFF673AB7),
+              label: 'Mes Suiveurs',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.followers);
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.history,
+              iconColor: const Color(0xFFFF9800),
+              label: 'Historique Consultations',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.consultHistory);
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.update,
+              iconColor: const Color(0xFF9C27B0),
+              label: 'Mettre à jour QR',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.qrUpdatePrompt);
+              },
+            ),
+
+            const Divider(indent: 16, endIndent: 16),
+
+            // ── Déconnexion ──────────────────────────────────────────
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red, size: 26),
+              title: const Text(
+                'Déconnexion',
+                style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await ref.read(authProvider.notifier).logout();
+                if (context.mounted) {
+                  Navigator.pushReplacementNamed(context, AppRoutes.login);
+                }
+              },
+            ),
+
+            const SizedBox(height: 16),
+            const Center(
+              child: Text(
+                'Mboka Care v1.0.0 — Tout gratuit ✓',
+                style: TextStyle(color: Colors.grey, fontSize: 11),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+
+      // ─── APP BAR ────────────────────────────────────────────────────
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.black87,
+        title: const Text(
+          'Mboka Care',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
+        centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFF3B82F6).withOpacity(0.15),
+              child: const Icon(Icons.person,
+                  color: Color(0xFF3B82F6), size: 22),
+            ),
+          ),
         ],
       ),
+
+      // ─── CORPS : Grille 2×2 ──────────────────────────────────────────
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Salutation ───────────────────────────────────────────
+            Text(
+              firstName.isNotEmpty
+                  ? 'Bienvenue $firstName 👋'
+                  : 'Bienvenue 👋',
+              style: const TextStyle(
+                  fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Prenez soin de ce qui compte vraiment',
+              style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 32),
+
+            // ── Ligne 1 : Famille + Rappels ──────────────────────────
+            Row(
+              children: [
+                Expanded(
+                  child: _ModernCard(
+                    emoji: '👥',
+                    label: 'FAMILLE',
+                    color: const Color(0xFF3B82F6),
+                    onTap: () =>
+                        Navigator.pushNamed(context, AppRoutes.family),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _ModernCard(
+                    emoji: '💊',
+                    label: 'RAPPELS',
+                    color: const Color(0xFF10B981),
+                    onTap: () =>
+                        Navigator.pushNamed(context, AppRoutes.reminders),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // ── Ligne 2 : Ma Santé + Mon QR ──────────────────────────
+            Row(
+              children: [
+                Expanded(
+                  child: _ModernCard(
+                    emoji: '🏥',
+                    label: 'MA SANTÉ',
+                    color: const Color(0xFFEF4444),
+                    onTap: () => Navigator.pushNamed(
+                        context, AppRoutes.healthPriority),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _ModernCard(
+                    emoji: '',
+                    label: 'MON QR',
+                    color: const Color(0xFF8B5CF6),
+                    icon: Icons.qr_code_2,
+                    onTap: () =>
+                        Navigator.pushNamed(context, AppRoutes.qrCode),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+
+            // ── Accès rapide ─────────────────────────────────────────
+            Text(
+              'Accès rapide',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade600,
+                  letterSpacing: 0.5),
+            ),
+            const SizedBox(height: 12),
+
+            _QuickTile(
+              icon: Icons.file_upload_outlined,
+              iconColor: const Color(0xFF4CAF50),
+              title: 'Ajouter un document',
+              subtitle: 'Analyses, ordonnances...',
+              onTap: () =>
+                  Navigator.pushNamed(context, AppRoutes.uploadDocument),
+            ),
+            const SizedBox(height: 10),
+            _QuickTile(
+              icon: Icons.credit_card_outlined,
+              iconColor: const Color(0xFF1565C0),
+              title: 'Carte QR Médicale',
+              subtitle: 'Aperçu carte imprimable',
+              onTap: () =>
+                  Navigator.pushNamed(context, AppRoutes.qrCard),
+            ),
+            const SizedBox(height: 10),
+            _QuickTile(
+              icon: Icons.history,
+              iconColor: const Color(0xFFFF9800),
+              title: 'Historique Consultations',
+              subtitle: 'Qui a consulté mon dossier',
+              onTap: () =>
+                  Navigator.pushNamed(context, AppRoutes.consultHistory),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _HomeTab extends ConsumerWidget {
-  const _HomeTab();
+// ─── Carte grille 2×2 ─────────────────────────────────────────────────────────
+
+class _ModernCard extends StatelessWidget {
+  final String emoji;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  const _ModernCard({
+    required this.emoji,
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.icon,
+  });
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final patient = ref.watch(patientProvider).patient;
-    final reminders = ref.watch(reminderProvider).reminders;
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Bonjour 👋', style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
-              Text(patient?.firstName ?? 'Chargement...', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            ]),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
-              child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.circle, color: Colors.green, size: 8),
-                SizedBox(width: 6),
-                Text('En ligne', style: TextStyle(color: Colors.green, fontSize: 12)),
-              ]),
-            ),
-          ]),
-          const SizedBox(height: 20),
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, AppRoutes.qrCode),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFF2196F3), Color(0xFF1976D2)]),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(children: [
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('🆘 QR Code d\'Urgence', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                  const SizedBox(height: 8),
-                  Text(patient?.fullName ?? '...', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text('🩸 ${patient?.bloodGroup ?? "Non renseigné"}', style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
-                    child: const Text('Voir mon QR Code', style: TextStyle(color: Color(0xFF2196F3), fontWeight: FontWeight.bold, fontSize: 13)),
-                  ),
-                ])),
-                const Icon(Icons.qr_code_2, size: 80, color: Colors.white54),
-              ]),
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text('Actions rapides', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          GridView.count(
-            crossAxisCount: 3, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12, mainAxisSpacing: 12,
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.08),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          height: 140,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _action(context, Icons.qr_code, 'Mon QR', const Color(0xFF2196F3), AppRoutes.qrCode),
-              _action(context, Icons.qr_code_scanner, 'Scanner', const Color(0xFF4CAF50), AppRoutes.scanner),
-              _action(context, Icons.alarm_add, 'Rappel', const Color(0xFF9C27B0), AppRoutes.addReminder),
-              _action(context, Icons.upload_file, 'Document', const Color(0xFFE91E63), AppRoutes.uploadDocument),
-              _action(context, Icons.folder, 'Documents', const Color(0xFFFF9800), AppRoutes.documents),
-              _action(context, Icons.health_and_safety, 'Santé', const Color(0xFF009688), AppRoutes.healthPriority),
+              if (icon != null)
+                Icon(icon, size: 48, color: color)
+              else
+                Text(emoji, style: const TextStyle(fontSize: 48)),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                    letterSpacing: 0.3),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
-          const SizedBox(height: 20),
-          const Text("Rappels d'aujourd'hui", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          if (reminders.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-              child: const Center(child: Text('Aucun rappel', style: TextStyle(color: Colors.grey))),
-            )
-          else
-            ...reminders.take(3).map((r) => Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-              child: Row(children: [
-                Container(
-                  width: 48, height: 48,
-                  decoration: BoxDecoration(color: const Color(0xFF9C27B0).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.medication, color: Color(0xFF9C27B0)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(r.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  Text(r.timeSlots.isNotEmpty ? r.timeSlots.join(' • ') : r.frequencyDisplay,
-                    style: const TextStyle(color: Color(0xFF2196F3), fontSize: 13)),
-                ])),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green, minimumSize: Size.zero,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                  child: const Text('Pris ✓', style: TextStyle(color: Colors.white, fontSize: 12)),
-                ),
-              ]),
-            )),
-        ]),
-      ),
-    );
-  }
-
-  Widget _action(BuildContext context, IconData icon, String label, Color color, String route) {
-    return InkWell(
-      onTap: () => Navigator.pushNamed(context, route),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)]),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(width: 48, height: 48,
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
-            child: Icon(icon, color: color, size: 24)),
-          const SizedBox(height: 8),
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-        ]),
-      ),
-    );
-  }
-}
-
-class _RemindersTab extends StatelessWidget {
-  const _RemindersTab();
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Mes Rappels')),
-    floatingActionButton: FloatingActionButton(
-      onPressed: () => Navigator.pushNamed(context, AppRoutes.addReminder),
-      child: const Icon(Icons.add),
-    ),
-    body: const Center(child: Text('Rappels')),
-  );
-}
-
-class _DocumentsTab extends StatelessWidget {
-  const _DocumentsTab();
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Documents')),
-    body: const Center(child: Text('Documents')),
-  );
-}
-
-class _ProfileTab extends ConsumerWidget {
-  const _ProfileTab();
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final patient = ref.watch(patientProvider).patient;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mon Profil')),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
-        const CircleAvatar(radius: 50, backgroundColor: Color(0xFF2196F3),
-          child: Icon(Icons.person, size: 50, color: Colors.white)),
-        const SizedBox(height: 16),
-        Center(child: Text(patient?.fullName ?? '...', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
-        const SizedBox(height: 32),
-        ListTile(
-          leading: const Icon(Icons.logout, color: Colors.red),
-          title: const Text('Déconnexion', style: TextStyle(color: Colors.red)),
-          onTap: () async {
-            await ref.read(authProvider.notifier).logout();
-            if (!context.mounted) return;
-            Navigator.pushReplacementNamed(context, AppRoutes.login);
-          },
         ),
-      ]),
+      ),
+    );
+  }
+}
+
+// ─── Tuile accès rapide ────────────────────────────────────────────────────────
+
+class _QuickTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _QuickTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      elevation: 1,
+      shadowColor: Colors.black.withOpacity(0.06),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: iconColor, size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 3),
+                  Text(subtitle,
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.grey.shade600)),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios,
+                size: 15, color: Colors.grey.shade400),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Item Drawer ──────────────────────────────────────────────────────────────
+
+class _DrawerItem extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final VoidCallback onTap;
+
+  const _DrawerItem({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon, color: iconColor, size: 26),
+      title: Text(label,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+      onTap: onTap,
+      horizontalTitleGap: 8,
     );
   }
 }

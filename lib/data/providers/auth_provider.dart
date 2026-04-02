@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/local_storage.dart';
 import '../models/user_model.dart';
@@ -10,22 +11,14 @@ class AuthState {
   final UserModel? user;
   final String? errorMessage;
 
-  AuthState({
-    required this.status,
-    this.user,
-    this.errorMessage,
-  });
+  AuthState({required this.status, this.user, this.errorMessage});
 
-  AuthState copyWith({
-    AuthStatus? status,
-    UserModel? user,
-    String? errorMessage,
-  }) =>
-      AuthState(
-        status: status ?? this.status,
-        user: user ?? this.user,
-        errorMessage: errorMessage ?? this.errorMessage,
-      );
+  AuthState copyWith({AuthStatus? status, UserModel? user, String? errorMessage}) =>
+    AuthState(
+      status: status ?? this.status,
+      user: user ?? this.user,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -45,28 +38,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> login({required String phone, required String password}) async {
     try {
       state = state.copyWith(status: AuthStatus.loading);
-      
-      final response = await _api.login({
-        'phone': phone,
-        'password': password,
-      });
+      final response = await _api.login({'phone': phone, 'password': password});
 
       if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+
         // Sauvegarder les tokens JWT
-        await LocalStorage.saveAccessToken(response.data['access']);
-        if (response.data['refresh'] != null) {
-          await LocalStorage.saveRefreshToken(response.data['refresh']);
-        }
+        final accessToken = data['access']?.toString() ?? data['token']?.toString();
+        if (accessToken != null) await LocalStorage.saveAccessToken(accessToken);
+
+        final refreshToken = data['refresh']?.toString();
+        if (refreshToken != null) await LocalStorage.saveRefreshToken(refreshToken);
 
         // Sauvegarder les infos utilisateur
-        final user = UserModel.fromJson(response.data['user']);
-        await LocalStorage.saveUserId(user.id);
-        await LocalStorage.saveUserRole(user.role);
+        UserModel? user;
+        if (data['user'] is Map) {
+          user = UserModel.fromJson(Map<String, dynamic>.from(data['user']));
+          await LocalStorage.saveUserId(user.id);
+          await LocalStorage.saveUserRole(user.role);
+        }
 
-        state = state.copyWith(
-          status: AuthStatus.authenticated,
-          user: user,
-        );
+        state = state.copyWith(status: AuthStatus.authenticated, user: user);
         return true;
       }
 
@@ -75,11 +67,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
         errorMessage: 'Téléphone ou mot de passe incorrect',
       );
       return false;
+    } on DioException catch (e) {
+      String msg = 'Erreur de connexion. Vérifiez votre réseau.';
+      if (e.response?.statusCode == 400 || e.response?.statusCode == 401) {
+        final data = e.response?.data;
+        if (data is Map) {
+          msg = data['detail']?.toString() ??
+                data['non_field_errors']?.toString() ??
+                'Téléphone ou mot de passe incorrect';
+        }
+      } else if (e.type == DioExceptionType.connectionTimeout ||
+                 e.type == DioExceptionType.receiveTimeout) {
+        msg = 'Le serveur met du temps à répondre. Veuillez patienter.';
+      }
+      state = state.copyWith(status: AuthStatus.error, errorMessage: msg);
+      return false;
     } catch (e) {
-      print('Login error: $e');
       state = state.copyWith(
         status: AuthStatus.error,
-        errorMessage: 'Erreur de connexion. Vérifiez votre réseau.',
+        errorMessage: 'Erreur inattendue. Réessayez.',
       );
       return false;
     }
@@ -88,55 +94,54 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> register(Map<String, dynamic> data) async {
     try {
       state = state.copyWith(status: AuthStatus.loading);
-
       final response = await _api.register(data);
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        // Sauvegarder les tokens
-        await LocalStorage.saveAccessToken(response.data['access']);
-        if (response.data['refresh'] != null) {
-          await LocalStorage.saveRefreshToken(response.data['refresh']);
+        final resData = response.data as Map<String, dynamic>;
+
+        final accessToken = resData['access']?.toString() ?? resData['token']?.toString();
+        if (accessToken != null) await LocalStorage.saveAccessToken(accessToken);
+
+        final refreshToken = resData['refresh']?.toString();
+        if (refreshToken != null) await LocalStorage.saveRefreshToken(refreshToken);
+
+        UserModel? user;
+        if (resData['user'] is Map) {
+          user = UserModel.fromJson(Map<String, dynamic>.from(resData['user']));
+          await LocalStorage.saveUserId(user.id);
+          await LocalStorage.saveUserRole(user.role);
         }
 
-        // Sauvegarder les infos utilisateur
-        final user = UserModel.fromJson(response.data['user']);
-        await LocalStorage.saveUserId(user.id);
-        await LocalStorage.saveUserRole(user.role);
-
-        state = state.copyWith(
-          status: AuthStatus.authenticated,
-          user: user,
-        );
+        state = state.copyWith(status: AuthStatus.authenticated, user: user);
         return true;
       }
 
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: "Erreur d'inscription",
-      );
+      state = state.copyWith(status: AuthStatus.error, errorMessage: "Erreur d'inscription");
+      return false;
+    } on DioException catch (e) {
+      String msg = 'Ce numéro est déjà utilisé ou erreur réseau';
+      if (e.response?.data is Map) {
+        final d = e.response!.data as Map;
+        msg = d['detail']?.toString() ??
+              d['phone']?.toString() ??
+              d['email']?.toString() ??
+              msg;
+      }
+      state = state.copyWith(status: AuthStatus.error, errorMessage: msg);
       return false;
     } catch (e) {
-      print('Register error: $e');
       state = state.copyWith(
         status: AuthStatus.error,
-        errorMessage: 'Ce numéro est déjà utilisé ou erreur réseau',
+        errorMessage: 'Erreur inattendue. Réessayez.',
       );
       return false;
     }
   }
 
   Future<void> logout() async {
-    try {
-      await _api.logout();
-    } catch (e) {
-      print('Logout error: $e');
-    }
-
+    try { await _api.logout(); } catch (_) {}
     await LocalStorage.clearAll();
-    state = state.copyWith(
-      status: AuthStatus.unauthenticated,
-      user: null,
-    );
+    state = AuthState(status: AuthStatus.unauthenticated);
   }
 }
 

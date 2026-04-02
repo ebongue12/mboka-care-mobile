@@ -65,7 +65,7 @@ class _QrCodeScreenState extends ConsumerState<QrCodeScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20)]),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20)]),
               child: QrImageView(data: jsonEncode(_payload), version: QrVersions.auto, size: 250, backgroundColor: Colors.white),
             ),
             const SizedBox(height: 24),

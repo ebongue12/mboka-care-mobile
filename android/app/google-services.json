@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "525655887594",
+    "project_id": "mboka-care",
+    "storage_bucket": "mboka-care.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:525655887594:android:3fb4002fbb785039165193",
+        "android_client_info": {
+          "package_name": "com.mbokacare.mboka_care_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvxckyykTVtltr2OPvnJRDihHdwTZ1rZg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

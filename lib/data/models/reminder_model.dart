@@ -17,6 +17,15 @@ class ReminderModel {
     }
   }
 
+  ReminderModel copyWith({bool? isActive}) => ReminderModel(
+        id: id,
+        title: title,
+        medicationName: medicationName,
+        frequency: frequency,
+        timeSlots: timeSlots,
+        isActive: isActive ?? this.isActive,
+      );
+
   factory ReminderModel.fromJson(Map<String, dynamic> json) => ReminderModel(
     id: json['id'], title: json['title'], medicationName: json['medication_name'],
     frequency: json['frequency'] ?? 'DAILY',

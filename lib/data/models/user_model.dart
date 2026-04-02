@@ -11,7 +11,12 @@ class UserModel {
     required this.country, required this.city, required this.district});
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-    id: json['id'], phone: json['phone'], email: json['email'],
-    role: json['role'], country: json['country'], city: json['city'], district: json['district'],
+    id: json['id']?.toString() ?? '',
+    phone: json['phone']?.toString() ?? '',
+    email: json['email']?.toString(),
+    role: json['role']?.toString() ?? 'PATIENT',
+    country: json['country']?.toString() ?? '',
+    city: json['city']?.toString() ?? '',
+    district: json['district']?.toString() ?? '',
   );
 }
