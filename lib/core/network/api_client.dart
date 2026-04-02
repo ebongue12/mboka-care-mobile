@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../../app/constants.dart';
@@ -28,19 +29,42 @@ class ApiClient {
         }
         return handler.next(options);
       },
-      onError: (error, handler) {
-        if (error.response?.statusCode == 401) {
-          LocalStorage.clearTokens();
+      onError: (error, handler) async {
+        final isUnauthorized = error.response?.statusCode == 401;
+        final isRefreshRequest =
+            error.requestOptions.path.contains('/accounts/token/refresh/');
+
+        if (isUnauthorized && !isRefreshRequest) {
+          final refreshToken = LocalStorage.getRefreshToken();
+          if (refreshToken != null) {
+            try {
+              final refreshDio = Dio(BaseOptions(baseUrl: AppConstants.apiBaseUrl));
+              final resp = await refreshDio.post(
+                '/accounts/token/refresh/',
+                data: {'refresh': refreshToken},
+              );
+              if (resp.statusCode == 200) {
+                final newAccess = resp.data['access'] as String;
+                await LocalStorage.saveAccessToken(newAccess);
+                error.requestOptions.headers['Authorization'] = 'Bearer $newAccess';
+                final retryResponse = await _dio.fetch(error.requestOptions);
+                return handler.resolve(retryResponse);
+              }
+            } catch (_) {}
+          }
+          await LocalStorage.clearTokens();
         }
         return handler.next(error);
       },
     ));
 
-    _dio.interceptors.add(PrettyDioLogger(
-      requestBody: true,
-      responseBody: true,
-      compact: true,
-    ));
+    if (kDebugMode) {
+      _dio.interceptors.add(PrettyDioLogger(
+        requestBody: true,
+        responseBody: true,
+        compact: true,
+      ));
+    }
   }
 
   Dio get dio => _dio;
@@ -147,4 +171,23 @@ class ApiClient {
   // ─── Notifications ────────────────────────────────────────────
   Future<Response> getNotifications() =>
       _dio.get('/notifications/');
+
+  Future<Response> registerPushToken(Map<String, dynamic> data) =>
+      _dio.post('/notifications/tokens/', data: data);
+
+  // ─── Astuces Santé ────────────────────────────────────────────
+  Future<Response> getHealthTipsFeed() =>
+      _dio.get('/health-tips/feed/');
+
+  Future<Response> getMyHealthTips() =>
+      _dio.get('/health-tips/staff/');
+
+  Future<Response> publishHealthTip(Map<String, dynamic> data) =>
+      _dio.post('/health-tips/staff/', data: data);
+
+  Future<Response> deleteHealthTip(String id) =>
+      _dio.delete('/health-tips/staff/$id/');
+
+  Future<Response> markTipViewed(String tipId) =>
+      _dio.post('/health-tips/$tipId/view/');
 }

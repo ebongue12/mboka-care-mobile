@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../data/providers/patient_provider.dart';
 import '../../../data/providers/reminder_provider.dart';
 import '../../../data/providers/notification_provider.dart';
@@ -7,6 +9,7 @@ import '../../../data/providers/document_provider.dart';
 import '../../../data/providers/family_provider.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../../data/providers/qr_update_provider.dart';
+import '../../../core/storage/local_storage.dart';
 import '../../../app/routes.dart';
 
 class PatientDashboardScreen extends ConsumerStatefulWidget {
@@ -18,9 +21,74 @@ class PatientDashboardScreen extends ConsumerStatefulWidget {
 
 class _PatientDashboardScreenState
     extends ConsumerState<PatientDashboardScreen> {
+  String? _profileImagePath;
+
+  Future<void> _pickProfileImage() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 16),
+            const Text('Choisir une photo', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Color(0xFF3B82F6)),
+              title: const Text('Prendre une photo'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Color(0xFF3B82F6)),
+              title: const Text('Choisir depuis la galerie'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            if (_profileImagePath != null)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('Supprimer la photo', style: TextStyle(color: Colors.red)),
+                onTap: () async {
+                  await LocalStorage.saveProfileImagePath('');
+                  setState(() => _profileImagePath = null);
+                  if (context.mounted) Navigator.pop(context);
+                },
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+    final picked = await ImagePicker().pickImage(source: source, imageQuality: 80, maxWidth: 1920);
+    if (picked != null) {
+      final bytes = await picked.readAsBytes();
+      if (bytes.length > 5 * 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Image trop grande (max 5 Mo). Veuillez en choisir une autre.')),
+          );
+        }
+        return;
+      }
+      await LocalStorage.saveProfileImagePath(picked.path);
+      setState(() => _profileImagePath = picked.path);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    final savedPath = LocalStorage.getProfileImagePath();
+    if (savedPath != null && savedPath.isNotEmpty && File(savedPath).existsSync()) {
+      _profileImagePath = savedPath;
+    } else {
+      _profileImagePath = null;
+    }
     Future.microtask(() async {
       ref.read(patientProvider.notifier).loadProfile();
       ref.read(reminderProvider.notifier).loadReminders();
@@ -65,8 +133,12 @@ class _PatientDashboardScreenState
               ),
               currentAccountPicture: CircleAvatar(
                 backgroundColor: Colors.white,
-                child: Icon(Icons.person,
-                    size: 40, color: Colors.blue.shade700),
+                backgroundImage: _profileImagePath != null
+                    ? FileImage(File(_profileImagePath!))
+                    : null,
+                child: _profileImagePath == null
+                    ? Icon(Icons.person, size: 40, color: Colors.blue.shade700)
+                    : null,
               ),
               accountName: Text(
                 fullName,
@@ -150,6 +222,15 @@ class _PatientDashboardScreenState
               },
             ),
             _DrawerItem(
+              icon: Icons.tips_and_updates,
+              iconColor: const Color(0xFF10B981),
+              label: 'Astuces Santé',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.healthTips);
+              },
+            ),
+            _DrawerItem(
               icon: Icons.history,
               iconColor: const Color(0xFFFF9800),
               label: 'Historique Consultations',
@@ -214,11 +295,33 @@ class _PatientDashboardScreenState
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFF3B82F6).withOpacity(0.15),
-              child: const Icon(Icons.person,
-                  color: Color(0xFF3B82F6), size: 22),
+            child: GestureDetector(
+              onTap: _pickProfileImage,
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: const Color(0xFF3B82F6).withOpacity(0.15),
+                    backgroundImage: _profileImagePath != null
+                        ? FileImage(File(_profileImagePath!))
+                        : null,
+                    child: _profileImagePath == null
+                        ? const Icon(Icons.person, color: Color(0xFF3B82F6), size: 22)
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 0, right: 0,
+                    child: Container(
+                      width: 14, height: 14,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF3B82F6),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.add, size: 10, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -286,12 +389,11 @@ class _PatientDashboardScreenState
                 const SizedBox(width: 16),
                 Expanded(
                   child: _ModernCard(
-                    emoji: '',
-                    label: 'MON QR',
-                    color: const Color(0xFF8B5CF6),
-                    icon: Icons.qr_code_2,
+                    emoji: '💡',
+                    label: 'ASTUCES SANTÉ',
+                    color: const Color(0xFF10B981),
                     onTap: () =>
-                        Navigator.pushNamed(context, AppRoutes.qrCode),
+                        Navigator.pushNamed(context, AppRoutes.healthTips),
                   ),
                 ),
               ],

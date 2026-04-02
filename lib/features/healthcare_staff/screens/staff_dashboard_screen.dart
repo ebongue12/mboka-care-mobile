@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/providers/healthcare_staff_provider.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../../app/routes.dart';
+import '../../health_tips/screens/my_tips_screen.dart';
 import 'scan_qr_screen.dart';
 import 'followed_patients_screen.dart';
 import 'statistics_screen.dart';
@@ -77,6 +78,14 @@ class _StaffDashboardScreenState
               leading: const Icon(Icons.home, color: Color(0xFF10B981)),
               title: const Text('Accueil'),
               onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.tips_and_updates, color: Color(0xFFF59E0B)),
+              title: const Text('Astuces & Conseils Santé'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const MyTipsScreen()));
+              },
             ),
             ListTile(
               leading:
@@ -325,6 +334,17 @@ class _Dashboard extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                       builder: (_) => const StatisticsScreen())),
+            ),
+            const SizedBox(height: 12),
+            _ActionCard(
+              icon: Icons.tips_and_updates,
+              title: 'Astuces & Conseils Santé',
+              subtitle: 'Publiez des conseils ciblés pour vos patients',
+              color: const Color(0xFFF59E0B),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const MyTipsScreen())),
             ),
           ],
         ),

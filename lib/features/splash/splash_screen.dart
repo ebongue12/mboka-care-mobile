@@ -52,15 +52,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 120, height: 120,
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30)),
-                child: const Icon(Icons.health_and_safety, size: 70, color: Color(0xFF2196F3)),
+              Image.asset(
+                'assets/images/logo.png',
+                width: 150,
+                height: 150,
               ),
               const SizedBox(height: 24),
-              const Text('MBOKA-CARE', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2)),
-              const SizedBox(height: 8),
-              const Text('Votre santé, notre priorité', style: TextStyle(fontSize: 16, color: Colors.white70)),
+              const Text('MBOKA CARE', style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2)),
+              const SizedBox(height: 10),
+              const Text('Prenez soin de ce qui compte vraiment', textAlign: TextAlign.center, style: TextStyle(fontSize: 15, color: Colors.white70, fontStyle: FontStyle.italic)),
               const SizedBox(height: 60),
               const CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
             ],

@@ -33,52 +33,6 @@ class QrCardPreviewScreen extends ConsumerWidget {
           if (patient != null) _CardWidget(patient: patient),
 
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade200),
-            ),
-            child: const Row(children: [
-              Icon(Icons.print, color: Colors.blue),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Téléchargez et imprimez cette carte. '
-                  'Gardez-la dans votre portefeuille pour les urgences.',
-                  style: TextStyle(color: Colors.blue, fontSize: 13,
-                      height: 1.4),
-                ),
-              ),
-            ]),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Génération PDF disponible via le backend'),
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.download, color: Colors.white),
-              label: const Text('Télécharger la carte PDF',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2196F3),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
         ]),
       ),
     );

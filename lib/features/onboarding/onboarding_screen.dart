@@ -15,8 +15,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<Map<String, dynamic>> _pages = [
     {
       'icon': Icons.health_and_safety,
-      'title': 'Bienvenue sur Mboka-Care',
-      'desc': 'Votre santé, notre priorité. Gérez votre dossier médical en toute sécurité.',
+      'title': 'Mboka Care',
+      'desc': 'Prenez soin de ce qui compte vraiment.\nGérez votre santé et celle de votre famille en toute sécurité.',
     },
     {
       'icon': Icons.qr_code_2,
@@ -58,14 +58,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 120, height: 120,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2196F3),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: Icon(p['icon'] as IconData, size: 60, color: Colors.white),
-                        ),
+                        i == 0
+                          ? Image.asset('assets/images/logo.png', width: 140, height: 140)
+                          : Container(
+                              width: 120, height: 120,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2196F3),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Icon(p['icon'] as IconData, size: 60, color: Colors.white),
+                            ),
                         const SizedBox(height: 40),
                         Text(p['title'] as String,
                           textAlign: TextAlign.center,

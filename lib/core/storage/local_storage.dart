@@ -54,6 +54,12 @@ class LocalStorage {
   static Future<void> dismissQrUpdatePrompt() async =>
       saveLastQrUpdateCheck();
 
+  // Photo de profil
+  static Future<void> saveProfileImagePath(String path) async =>
+      _prefs.setString('profile_image_path', path);
+  static String? getProfileImagePath() =>
+      _prefs.getString('profile_image_path');
+
   // Clear all
   static Future<void> clearAll() async => _prefs.clear();
 }

@@ -21,6 +21,7 @@ import '../features/medecin/screens/scan_qr_screen.dart';
 import '../features/healthcare_staff/screens/staff_dashboard_screen.dart';
 import '../features/healthcare_staff/screens/staff_register_screen.dart';
 import '../features/auth/screens/role_selector_screen.dart';
+import '../features/health_tips/screens/health_tips_screen.dart';
 
 class AppRoutes {
   // ─── Patient ────────────────────────────────────────────────────
@@ -41,6 +42,7 @@ class AppRoutes {
   static const String family          = '/family';
   static const String followers       = '/followers';
   static const String consultHistory  = '/consultation-history';
+  static const String healthTips      = '/health-tips';
 
   // ─── Médecin (legacy) / Personnel de Santé ──────────────────────
   static const String medecinDashboard  = '/medecin';
@@ -75,6 +77,7 @@ class AppRoutes {
       case family:           return _r(const FamilyListScreen());
       case followers:        return _r(const FollowersListScreen());
       case consultHistory:   return _r(const ConsultationHistoryScreen());
+      case healthTips:       return _r(const HealthTipsScreen());
       case medecinDashboard: return _r(const StaffDashboardScreen());
       case medecinScanQr:    return _r(const MedecinScanQrScreen());
       case staffDashboard:   return _r(const StaffDashboardScreen());
