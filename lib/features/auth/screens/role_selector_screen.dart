@@ -17,17 +17,8 @@ class RoleSelectorScreen extends StatelessWidget {
               const SizedBox(height: 20),
 
               // ── Logo ──────────────────────────────────────────────
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2196F3),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: const Icon(Icons.health_and_safety,
-                    size: 55, color: Colors.white),
-              ),
-              const SizedBox(height: 20),
+              Image.asset('assets/images/logo.png', width: 110, height: 110),
+              const SizedBox(height: 16),
               const Text(
                 'MBOKA CARE',
                 style: TextStyle(

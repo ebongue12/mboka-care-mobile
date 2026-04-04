@@ -114,27 +114,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
 
-                // ── Icône rôle ──────────────────────────────────────
+                // ── Logo + slogan ────────────────────────────────────
                 Center(
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                        color: color, borderRadius: BorderRadius.circular(20)),
-                    child: Icon(_roleIcon, size: 45, color: Colors.white),
+                  child: Column(
+                    children: [
+                      Image.asset('assets/images/logo.png', width: 80, height: 80),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'MBOKA CARE',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2196F3),
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Prenez soin de ce qui compte vraiment',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 28),
+
+                // ── Titre rôle ──────────────────────────────────────
                 Center(
                   child: Text(
                     _screenTitle,
-                    style: const TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
-                const SizedBox(height: 36),
+                const SizedBox(height: 28),
 
                 // ── Champs ──────────────────────────────────────────
                 const Text('Numéro de téléphone',
