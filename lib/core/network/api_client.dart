@@ -190,4 +190,16 @@ class ApiClient {
 
   Future<Response> markTipViewed(String tipId) =>
       _dio.post('/health-tips/$tipId/view/');
+
+  // ─── Confirmation rappels ──────────────────────────────────────────
+  Future<Response> confirmReminder({
+    required String reminderId,
+    required String scheduledTime,
+    required String status, // TAKEN | SKIPPED | MISSED
+  }) =>
+      _dio.post('/reminders/confirm/', data: {
+        'reminder_id': reminderId,
+        'scheduled_time': scheduledTime,
+        'status': status,
+      });
 }
